@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from 'mongodb';
+import {Collection, ObjectId} from 'mongodb';
 
 export interface Listing {
     _id: ObjectId;
