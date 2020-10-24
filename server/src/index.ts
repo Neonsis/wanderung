@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+import cookieParser from "cookie-parser";
 import express, {Application} from "express";
 import {connectDatabase} from "./database";
 import {ApolloServer} from "apollo-server-express";
@@ -8,10 +9,13 @@ import {resolvers} from "./graphql/resolvers";
 
 const mount = async (app: Application) => {
     const db = await connectDatabase();
+
+    app.use(cookieParser(process.env.COOKIE_SECRET));
+
     const server = new ApolloServer({
         typeDefs,
         resolvers,
-        context: () => ({db})
+        context: ({req, res}) => ({db, req, res})
     });
 
     server.applyMiddleware({app, path: "/api"});
