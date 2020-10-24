@@ -8,8 +8,8 @@ import {AUTH_URL} from "../../graphql/queries/AuthUrl";
 import {LogIn as LogInData, LogInVariables} from "../../graphql/mutations/LogIn/__generated__/LogIn";
 import {LOG_IN} from "../../graphql/mutations/LogIn";
 import {displayErrorMessage, displaySuccessNotification} from "../../utils";
-import ErrorBanner from "../ErrorBanner";
 import {Redirect} from "react-router-dom";
+import {ErrorBanner} from "../ErrorBanner";
 
 const {Content} = Layout;
 const {Text, Title} = Typography;

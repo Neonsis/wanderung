@@ -1,3 +1,3 @@
 export interface LogInInput {
-  code: string;
+    code: string;
 }
