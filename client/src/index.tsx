@@ -7,7 +7,10 @@ import "./styles/index.css";
 
 const client = new ApolloClient({
     uri: '/api',
-    cache: new InMemoryCache()
+    cache: new InMemoryCache(),
+    headers: {
+        "X-CSRF-TOKEN": sessionStorage.getItem("token") || ""
+    }
 });
 
 ReactDOM.render(
