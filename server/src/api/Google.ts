@@ -3,7 +3,7 @@ import {google} from "googleapis";
 const auth = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.PUBLIC_URL}/login`
+    `${process.env.PUBLIC_URL}`
 );
 
 export const Google = {

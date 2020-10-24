@@ -1,5 +1,13 @@
 import {Collection, ObjectId} from 'mongodb';
 
+export interface Viewer {
+    _id?: string;
+    token?: string;
+    avatar?: string;
+    walletId?: string;
+    didRequest: boolean;
+}
+
 export interface User {
     _id: string;
     token: string;
