@@ -22,7 +22,7 @@ export interface User {
 
 export interface Booking {
     _id: ObjectId;
-    listings: ObjectId;
+    listing: ObjectId;
     tenant: string;
     checkIn: string;
     checkOut: string;
