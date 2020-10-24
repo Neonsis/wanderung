@@ -15,7 +15,7 @@ export const listingResolvers: IResolvers = {
     Mutation: {
         deleteListing: async (
             _root: undefined,
-            {id}: { id: ObjectId },
+            {id}: { id: string },
             {db}: { db: Database }
         ): Promise<Listing> => {
             const deletedResponse = await db.listings.findOneAndDelete({
@@ -28,5 +28,8 @@ export const listingResolvers: IResolvers = {
 
             return deletedResponse.value;
         }
+    },
+    Listing: {
+        id: (listing: Listing): string => listing._id.toString()
     }
 }
