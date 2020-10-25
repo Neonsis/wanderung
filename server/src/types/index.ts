@@ -8,17 +8,17 @@ export interface Viewer {
     didRequest: boolean;
 }
 
-export interface User {
-    _id: string;
-    token: string;
-    name: string;
-    avatar: string;
-    contact: string;
-    walletId?: string;
-    income: number;
-    bookings: ObjectId[];
-    listings: ObjectId[];
-    authorized?: boolean;
+export enum ListingType {
+    Apartment = "apartment",
+    House = "house"
+}
+
+export interface BookingsIndexMonth {
+    [key: string]: boolean;
+}
+
+export interface BookingsIndexYear {
+    [key: string]: BookingsIndexMonth;
 }
 
 export interface Booking {
@@ -41,26 +41,22 @@ export interface Listing {
     admin: string;
     city: string;
     bookings: ObjectId[];
-    bookingsIndex: BookingsIndex;
+    bookingsIndex: BookingsIndexYear;
     price: number;
     numOfGuests: number;
 }
 
-export interface BookingsIndex {
-    [key: string]: BookingsIndexYear;
-}
-
-export interface BookingsIndexYear {
-    [key: string]: BookingsIndexMonth;
-}
-
-export interface BookingsIndexMonth {
-    [key: string]: boolean;
-}
-
-export enum ListingType {
-    Apartment = "APARTMENT",
-    House = "HOUSE"
+export interface User {
+    _id: string;
+    token: string;
+    name: string;
+    avatar: string;
+    contact: string;
+    walletId?: string;
+    income: number;
+    bookings: ObjectId[];
+    listings: ObjectId[];
+    authorized?: boolean;
 }
 
 export interface Database {

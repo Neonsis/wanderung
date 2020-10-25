@@ -1,14 +1,6 @@
 import {gql} from 'apollo-server-express';
 
 export const typeDefs = gql`
-  type Viewer {
-    id: ID
-    token: String
-    avatar: String
-    hasWallet: Boolean
-    didRequest: Boolean!
-  }
-  
   type Booking {
     id: ID!
     listing: Listing!
@@ -16,38 +8,37 @@ export const typeDefs = gql`
     checkIn: String!
     checkOut: String!
   }
-  
+
+  type Bookings {
+    total: Int!
+    result: [Booking!]!
+  }
+
   enum ListingType {
     APARTMENT
     HOUSE
   }
-  
+
   type Listing {
-    id: ID
+    id: ID!
     title: String!
     description: String!
     image: String!
     host: User!
     type: ListingType!
     address: String!
-    country: String!
     city: String!
     bookings(limit: Int!, page: Int!): Bookings
     bookingsIndex: String!
     price: Int!
     numOfGuests: Int!
   }
-  
-  type Bookings {
-    total: Int!
-    result: [Booking!]!
-  }
-  
+
   type Listings {
-  total: Int!
+    total: Int!
     result: [Listing!]!
   }
-  
+
   type User {
     id: ID!
     name: String!
@@ -59,13 +50,21 @@ export const typeDefs = gql`
     listings(limit: Int!, page: Int!): Listings!
   }
 
-  type Query {
-    authUrl: String!
-    user(id: ID!): User!
+  type Viewer {
+    id: ID
+    token: String
+    avatar: String
+    hasWallet: Boolean
+    didRequest: Boolean!
   }
 
   input LogInInput {
     code: String!
+  }
+
+  type Query {
+    authUrl: String!
+    user(id: ID!): User!
   }
 
   type Mutation {
