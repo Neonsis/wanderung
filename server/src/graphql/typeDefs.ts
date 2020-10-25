@@ -22,7 +22,7 @@ export const typeDefs = gql`
     HOUSE
   }
   
-  type Listings {
+  type Listing {
     id: ID
     title: String!
     description: String!
