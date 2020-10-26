@@ -1,26 +1,29 @@
-import { IResolvers } from "apollo-server-express";
-import { Request } from "express";
-import { ObjectId } from "mongodb";
-import { Database, Listing, User } from "../../../types";
+import {IResolvers} from "apollo-server-express";
+import {Request} from "express";
+import {ObjectId} from "mongodb";
+import {Database, Listing, User} from "../../../types";
 import {
     ListingArgs,
     ListingBookingsArgs,
     ListingBookingsData,
     ListingsArgs,
     ListingsData,
-    ListingsFilter
+    ListingsFilter,
+    ListingsQuery
 } from "./types";
 import {authorize} from "../../../util";
+import {Google} from "../../../api";
 
 export const listingResolvers: IResolvers = {
     Query: {
         listing: async (
             _root: undefined,
-            { id }: ListingArgs,
-            { db, req }: { db: Database; req: Request }
+            {id}: ListingArgs,
+            {db, req}: { db: Database; req: Request }
         ): Promise<Listing> => {
             try {
-                const listing = await db.listings.findOne({ _id: new ObjectId(id) });
+                const listing = await db.listings.findOne({_id: new ObjectId(id)});
+
                 if (!listing) {
                     throw new Error("listing can't be found");
                 }
@@ -37,23 +40,42 @@ export const listingResolvers: IResolvers = {
         },
         listings: async (
             _root: undefined,
-            { filter, limit, page }: ListingsArgs,
-            { db }: { db: Database }
+            {location, filter, limit, page}: ListingsArgs,
+            {db}: { db: Database }
         ): Promise<ListingsData> => {
             try {
+                const query: ListingsQuery = {};
+
                 const data: ListingsData = {
                     total: 0,
-                    result: []
+                    result: [],
+                    region: ""
                 };
+
+                if (location) {
+                    const {country, admin, city} = await Google.geocode(location);
+
+                    if (city) query.city = city;
+                    if (admin) query.admin = admin;
+                    if (country) {
+                        query.country = country
+                    } else {
+                        throw new Error("No country found");
+                    }
+
+                    const cityText = city ? `${city},` : "";
+                    const adminText = admin ? `${admin},` : "";
+                    data.region = `${cityText}${adminText}${country}`;
+                }
 
                 let cursor = await db.listings.find({});
 
                 if (filter && filter === ListingsFilter.PRICE_LOW_TO_HIGH) {
-                    cursor = cursor.sort({ price: 1 });
+                    cursor = cursor.sort({price: 1});
                 }
 
                 if (filter && filter === ListingsFilter.PRICE_HIGH_TO_LOW) {
-                    cursor = cursor.sort({ price: -1 });
+                    cursor = cursor.sort({price: -1});
                 }
 
                 cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
@@ -75,9 +97,9 @@ export const listingResolvers: IResolvers = {
         host: async (
             listing: Listing,
             _args: {},
-            { db }: { db: Database }
+            {db}: { db: Database }
         ): Promise<User> => {
-            const host = await db.users.findOne({ _id: listing.host });
+            const host = await db.users.findOne({_id: listing.host});
             if (!host) {
                 throw new Error("host can't be found");
             }
@@ -88,8 +110,8 @@ export const listingResolvers: IResolvers = {
         },
         bookings: async (
             listing: Listing,
-            { limit, page }: ListingBookingsArgs,
-            { db }: { db: Database }
+            {limit, page}: ListingBookingsArgs,
+            {db}: { db: Database }
         ): Promise<ListingBookingsData | null> => {
             try {
                 if (!listing.authorized) {
@@ -102,7 +124,7 @@ export const listingResolvers: IResolvers = {
                 };
 
                 let cursor = await db.bookings.find({
-                    _id: { $in: listing.bookings }
+                    _id: {$in: listing.bookings}
                 });
 
                 cursor = cursor.skip(page > 0 ? (page - 1) * limit : 0);
