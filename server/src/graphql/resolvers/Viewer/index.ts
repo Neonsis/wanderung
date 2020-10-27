@@ -1,9 +1,11 @@
 import crypto from "crypto";
-import { Request, Response } from "express";
-import { IResolvers } from "apollo-server-express";
-import { Google } from "../../../api";
-import { Viewer, Database, User } from "../../../types";
-import { LogInArgs } from "./types";
+import {Request, Response} from "express";
+import {IResolvers} from "apollo-server-express";
+import {Google} from "../../../api";
+import {Database, User, Viewer} from "../../../types";
+import {ConnectStripeArgs, LogInArgs} from "./types";
+import {authorize} from "../../../util";
+import {Stripe} from "../../../api/Stripe";
 
 const cookieOptions = {
     httpOnly: true,
@@ -18,7 +20,7 @@ const logInViaGoogle = async (
     db: Database,
     res: Response
 ): Promise<User | undefined> => {
-    const { user } = await Google.logIn(code);
+    const {user} = await Google.logIn(code);
 
     if (!user) {
         throw new Error("Google login error");
@@ -51,7 +53,7 @@ const logInViaGoogle = async (
     }
 
     const updateRes = await db.users.findOneAndUpdate(
-        { _id: userId },
+        {_id: userId},
         {
             $set: {
                 name: userName,
@@ -60,7 +62,7 @@ const logInViaGoogle = async (
                 token
             }
         },
-        { returnOriginal: false }
+        {returnOriginal: false}
     );
 
     let viewer = updateRes.value;
@@ -95,9 +97,9 @@ const logInViaCookie = async (
     res: Response
 ): Promise<User | undefined> => {
     const updateRes = await db.users.findOneAndUpdate(
-        { _id: req.signedCookies.viewer },
-        { $set: { token } },
-        { returnOriginal: false }
+        {_id: req.signedCookies.viewer},
+        {$set: {token}},
+        {returnOriginal: false}
     );
 
     let viewer = updateRes.value;
@@ -122,8 +124,8 @@ export const viewerResolvers: IResolvers = {
     Mutation: {
         logIn: async (
             _root: undefined,
-            { input }: LogInArgs,
-            { db, req, res }: { db: Database; req: Request; res: Response }
+            {input}: LogInArgs,
+            {db, req, res}: { db: Database; req: Request; res: Response }
         ): Promise<Viewer> => {
             try {
                 const code = input ? input.code : null;
@@ -134,7 +136,7 @@ export const viewerResolvers: IResolvers = {
                     : await logInViaCookie(token, db, req, res);
 
                 if (!viewer) {
-                    return { didRequest: true };
+                    return {didRequest: true};
                 }
 
                 return {
@@ -151,13 +153,88 @@ export const viewerResolvers: IResolvers = {
         logOut: (
             _root: undefined,
             _args: {},
-            { res }: { res: Response }
+            {res}: { res: Response }
         ): Viewer => {
             try {
                 res.clearCookie("viewer", cookieOptions);
-                return { didRequest: true };
+                return {didRequest: true};
             } catch (error) {
                 throw new Error(`Failed to log out: ${error}`);
+            }
+        },
+        connectStripe: async (
+            _root: undefined,
+            {input}: ConnectStripeArgs,
+            {db, req}: { db: Database, req: Request }
+        ): Promise<Viewer> => {
+            try {
+                const {code} = input;
+
+                let viewer = await authorize(db, req)
+
+                if (!viewer) {
+                    throw new Error("Viewer cannot be found");
+                }
+
+                const wallet = await Stripe.connect(code);
+                if (!wallet) {
+                    throw new Error("Stripe grant error");
+                }
+
+                const updateRes = await db.users.findOneAndUpdate(
+                    {_id: viewer._id},
+                    {$set: {walletId: wallet.stripe_user_id}},
+                    {returnOriginal: false}
+                );
+
+                if (!updateRes.value) {
+                    throw new Error("Viewer could not be updated");
+                }
+
+                viewer = updateRes.value;
+
+                return {
+                    _id: viewer?._id,
+                    token: viewer?.token,
+                    avatar: viewer?.avatar,
+                    walletId: viewer?.walletId,
+                    didRequest: true
+                }
+            } catch (error) {
+                throw new Error("Failed to connect with Stripe: " + error);
+            }
+        },
+        disconnectStripe: async (
+            _root: undefined,
+            _args: {},
+            {db, req}: { db: Database, req: Request }
+        ): Promise<Viewer> => {
+            try {
+                let viewer = await authorize(db, req);
+                if (!viewer) {
+                    throw new Error("Viewer cannot be found");
+                }
+
+                const updateRes = await db.users.findOneAndUpdate(
+                    {_id: viewer._id},
+                    {$set: {walletId: null!}},
+                    {returnOriginal: false}
+                );
+                if (!updateRes.value) {
+                    throw new Error("Viewer could not be updated");
+                }
+
+                viewer = updateRes.value;
+
+                return {
+                    _id: viewer?._id,
+                    token: viewer?.token,
+                    avatar: viewer?.avatar,
+                    walletId: viewer?.walletId,
+                    didRequest: true
+                }
+            } catch (error) {
+                throw new Error("Failed to disconnect with Stripe: " + error);
             }
         }
     },
