@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
-import {AppHeader, ErrorBanner, Home, Host, Listing, Listings, Login, NotFound, User} from "./components";
+import {AppHeader, ErrorBanner, Home, Host, Listing, Listings, Login, NotFound, Stripe, User} from "./components";
 import {Affix, Layout} from "antd";
 import {Viewer} from "./graphql/types";
 import {useMutation} from "@apollo/client";
@@ -53,6 +53,13 @@ function App() {
                     <Route exact path="/host" component={Host}/>
                     <Route exact path="/listing/:id" component={Listing}/>
                     <Route exact path="/listings/:location?" component={Listings}/>
+                    <Route exact path="/stripe" render={props => (
+                        <Stripe
+                            {...props}
+                            viewer={viewer}
+                            setViewer={setViewer}
+                        />)}
+                    />
                     <Route
                         exact
                         path="/login"
@@ -61,7 +68,7 @@ function App() {
                     <Route
                         exact
                         path="/user/:id"
-                        render={props => <User {...props} viewer={viewer}/>}
+                        render={props => <User {...props} viewer={viewer} setViewer={setViewer}/>}
                     />
                     <Route exact component={NotFound}/>
                 </Switch>

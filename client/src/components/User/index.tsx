@@ -10,20 +10,21 @@ import {PageSkeleton, UserBookings, UserListings, UserProfile} from "./component
 
 interface Props {
     viewer: Viewer;
+    setViewer: (viewer: Viewer) => void;
 }
 
 interface MatchParams {
     id: string;
 }
 
-const { Content } = Layout;
+const {Content} = Layout;
 const PAGE_LIMIT = 4;
 
-export const User = ({ viewer, match }: Props & RouteComponentProps<MatchParams>) => {
+export const User = ({viewer, setViewer, match}: Props & RouteComponentProps<MatchParams>) => {
     const [listingsPage, setListingsPage] = useState(1);
     const [bookingsPage, setBookingsPage] = useState(1);
 
-    const { data, loading, error } = useQuery<UserData, UserVariables>(USER, {
+    const {data, loading, error, refetch} = useQuery<UserData, UserVariables>(USER, {
         variables: {
             id: match.params.id,
             bookingsPage,
@@ -32,10 +33,20 @@ export const User = ({ viewer, match }: Props & RouteComponentProps<MatchParams>
         }
     });
 
+    const handleUserRefetch = async () => {
+        await refetch();
+    }
+
+    const stripeError = new URL(window.location.href).searchParams.get("stripe_error");
+    const stripeErrorBanner = stripeError
+        ? <ErrorBanner description="We had an issue connection with Stripe. Please try again soon."/>
+        : null;
+
+
     if (loading) {
         return (
             <Content className="user">
-                <PageSkeleton />
+                <PageSkeleton/>
             </Content>
         );
     }
@@ -43,8 +54,9 @@ export const User = ({ viewer, match }: Props & RouteComponentProps<MatchParams>
     if (error) {
         return (
             <Content className="user">
-                <ErrorBanner description="This user may not exist or we've encountered an error. Please try again soon." />
-                <PageSkeleton />
+                <ErrorBanner
+                    description="This user may not exist or we've encountered an error. Please try again soon."/>
+                <PageSkeleton/>
             </Content>
         );
     }
@@ -56,7 +68,13 @@ export const User = ({ viewer, match }: Props & RouteComponentProps<MatchParams>
     const userBookings = user ? user.bookings : null;
 
     const userProfileElement = user ? (
-        <UserProfile user={user} viewerIsUser={viewerIsUser} />
+        <UserProfile
+            user={user}
+            viewer={viewer}
+            viewerIsUser={viewerIsUser}
+            setViewer={setViewer}
+            handleUserRefetch={handleUserRefetch}
+        />
     ) : null;
 
     const userListingsElement = userListings ? (
@@ -79,6 +97,7 @@ export const User = ({ viewer, match }: Props & RouteComponentProps<MatchParams>
 
     return (
         <Content className="user">
+            {stripeErrorBanner}
             <Row gutter={12} type="flex" justify="space-between">
                 <Col xs={24}>{userProfileElement}</Col>
                 <Col xs={24}>
